@@ -1,27 +1,47 @@
-#!/bin/bash
+#!/usr/bin/bash
 
 set -ouex pipefail
 
-# Copy the contents of system_files/ of the git repo to /
-cp -avf "/ctx/system_files"/. /
+# Copy declarative system files into the image.
+cp -avf /ctx/system_files/. /
 
-### Install packages
+# jq is needed by install-image-trust.sh.
+dnf5 install -y jq
 
-# Packages can be installed from any enabled yum repo on the image.
-# RPMfusion repos are available by default in ublue main images
-# List of rpmfusion packages can be found here:
-# https://mirrors.rpmfusion.org/mirrorlist?path=free/fedora/updates/43/x86_64/repoview/index.html&protocol=https&redirect=1
+# Trust both planned custom-image repositories.
+/ctx/install-image-trust.sh \
+    "ghcr.io/iegorch86/home-server-ucore" \
+    "ghcr.io/iegorch86/home-server-ucore-hci"
 
-# this installs a package from fedora repos
-dnf5 install -y tmux
+# Small host-side administration/tooling layer.
+dnf5 install -y \
+    nut \
+    nut-client \
+    powertop \
+    btop \
+    fastfetch
 
-# Use a COPR Example:
-#
-# dnf5 -y copr enable ublue-os/staging
-# dnf5 -y install package
-# Disable COPRs so they don't end up enabled on the final image:
-# dnf5 -y copr disable ublue-os/staging
+# NetBird client from its official RPM repository.
+dnf5 install -y netbird
 
-#### Example for enabling a System Unit File
+# The generic image must not connect or auto-enable NetBird.
+systemctl disable netbird.service 2>/dev/null || true
 
-systemctl enable podman.socket
+# Build-time validation.
+command -v upsc
+command -v nut-scanner
+command -v powertop
+command -v btop
+command -v htop
+command -v fastfetch
+command -v netbird
+
+test -f /usr/share/cockpit/upside/manifest.json
+
+# Deliberately NOT done here:
+# - enable/configure NUT
+# - add UPS credentials/hardware-specific settings
+# - configure/connect NetBird
+# - run powertop --auto-tune
+
+dnf5 clean all

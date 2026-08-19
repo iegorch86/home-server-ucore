@@ -1,318 +1,293 @@
-# image-template
+# Home Server uCore
 
-This repository is meant to be a template for building your own custom [bootc](https://github.com/bootc-dev/bootc) image. This template is the recommended way to make customizations to any image published by the Universal Blue Project.
+A small downstream [Universal Blue uCore](https://github.com/ublue-os/ucore) image with a few practical tools for home-server administration.
 
-# Community
+> [!IMPORTANT]
+> This is **not a fork of Fedora CoreOS or uCore**, and it is not a separate Linux distribution.
+>
+> The kernel, Fedora CoreOS base, bootc/rpm-ostree stack, storage stack, virtualization stack, container stack, drivers and core uCore functionality remain upstream.
 
-If you have questions about this template after following the instructions, try the following spaces:
-- [Universal Blue Forums](https://universal-blue.discourse.group/)
-- [Universal Blue Discord](https://discord.gg/WEu6BdFEtp)
-- [bootc discussion forums](https://github.com/bootc-dev/bootc/discussions) - This is not an Universal Blue managed space, but is an excellent resource if you run into issues with building bootc images.
+The project exists because I wanted a few small utilities available natively on my own uCore home server and decided to make the resulting image available for anybody who finds the same combination useful.
 
-# How to Use
+```text
+Fedora CoreOS
+      |
+Universal Blue uCore
+      |
+Home Server uCore
+      |
+small host-admin tool layer
+```
 
-To get started on your first bootc image, simply read and follow the steps in the next few headings.
-If you prefer instructions in video form, TesterTech created an excellent tutorial, embedded below.
+## What is added
 
-[![Video Tutorial](https://img.youtube.com/vi/IxBl11Zmq5w/0.jpg)](https://www.youtube.com/watch?v=IxBl11Zmq5wE)
+| Tool | Purpose |
+|---|---|
+| NUT | Native UPS monitoring and shutdown integration |
+| UPSide | Cockpit interface for NUT |
+| PowerTOP | Power diagnostics |
+| btop | System/resource monitoring |
+| fastfetch | Quick system information |
+| NetBird | Alternative to Tailscale  mesh-VPN client |
 
-## Step 0: Prerequisites
+Everything else remains as close as possible to upstream uCore.
 
-These steps assume you have the following:
-- A Github Account
-- A machine running a bootc image (e.g. Bazzite, Bluefin, Aurora, or Fedora Atomic)
-- Experience installing and using CLI programs
+## Images
 
-## Step 1: Preparing the Template
+Initial image:
 
-### Step 1a: Copying the Template
+```text
+ghcr.io/iegorch86/home-server-ucore:lts
+```
 
-Select `Use this Template` on this page. You can set the name and description of your repository to whatever you would like, but all other settings should be left untouched.
+Based on:
 
-Once you have finished copying the template, you need to enable the Github Actions workflows for your new repository.
-To enable the workflows, go to the `Actions` tab of the new repository and click the button to enable workflows.
+```text
+ghcr.io/ublue-os/ucore:lts
+```
 
-### Step 1b: Cloning the New Repository
+Planned HCI image:
 
-Here I will defer to the much superior GitHub documentation on the matter. You can use whichever method is easiest.
-[GitHub Documentation](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository)
+```text
+ghcr.io/iegorch86/home-server-ucore-hci:lts
+```
 
-Once you have the repository on your local drive, proceed to the next step.
+Based on:
 
-## Step 2: Initial Setup
+```text
+ghcr.io/ublue-os/ucore-hci:lts
+```
 
-### Step 2a: Creating a Cosign Key
+Prepared future variants:
 
-Container signing is important for end-user security and is enabled on all Universal Blue images. By default the image builds *will fail* if you don't.
+```text
+ghcr.io/iegorch86/home-server-ucore:stable
+ghcr.io/iegorch86/home-server-ucore-hci:stable
+```
 
-First, install the [cosign CLI tool](https://edu.chainguard.dev/open-source/sigstore/cosign/how-to-install-cosign/#installing-cosign-with-the-cosign-binary)
-With the cosign tool installed, run inside your repo folder:
+Those builds are disabled until intentionally enabled.
+
+## Kernel scope
+
+This project does not maintain or select its own kernel.
+
+The LTS images inherit the kernel published by the corresponding upstream uCore LTS stream.
+
+Kernel regressions and other upstream kernel issues belong upstream.
+
+## UPS support
+
+The primary reason this project exists is to make native UPS integration easier on an immutable uCore server.
+
+The image includes:
+
+```text
+nut
+nut-client
+UPSide
+```
+
+Nothing hardware-specific is baked in:
+
+```text
+UPS model
+USB VID/PID
+serial number
+ups.conf
+upsd.conf
+upsd.users
+UPS passwords
+shutdown thresholds
+battery thresholds
+```
+
+Those settings belong to the individual server. A system with no UPS should work normally.
+
+## UPSide
+
+[UPSide](https://github.com/deviationist/cockpit-upside) is installed as a system-wide Cockpit extension and uses NUT as its backend.
+
+UPSide is compiled in a separate build stage so Node.js, npm and its other build dependencies do not remain in the final operating-system image.
+
+The project pins a known UPSide release instead of automatically building whatever happens to be on `main`.
+
+## PowerTOP
+
+PowerTOP is included for diagnostics.
 
 ```bash
-COSIGN_PASSWORD="" cosign generate-key-pair
+sudo powertop
 ```
 
-The signing key will be used in GitHub Actions and will not work if it is password protected.
-
-> [!WARNING]
-> Be careful to *never* accidentally commit `cosign.key` into your git repo. If this key goes out to the public, the security of your repository is compromised.
-
-Next, you need to add the key to GitHub. This makes use of GitHub's secret signing system.
-
-<details>
-    <summary>Using the Github Web Interface (preferred)</summary>
-
-Go to your repository settings, under `Secrets and Variables` -> `Actions`
-![image](https://user-images.githubusercontent.com/1264109/216735595-0ecf1b66-b9ee-439e-87d7-c8cc43c2110a.png)
-Add a new secret and name it `SIGNING_SECRET`, then paste the contents of `cosign.key` into the secret and save it. Make sure it's the .key file and not the .pub file. Once done, it should look like this:
-![image](https://user-images.githubusercontent.com/1264109/216735690-2d19271f-cee2-45ac-a039-23e6a4c16b34.png)
-</details>
-<details>
-<summary>Using the Github CLI</summary>
-
-If you have the `github-cli` installed, run:
+This image intentionally does **not** enable:
 
 ```bash
-gh secret set SIGNING_SECRET < cosign.key
+powertop --auto-tune
 ```
-</details>
 
-### Step 2b: Choosing Your Base Image
+If you want PowerTOP tuning on your own server, configure it locally.
 
-To choose a base image, simply modify the line in the container file starting with `FROM`. This will be the image your image derives from, and is your starting point for modifications.
-For a base image, you can choose any of the Universal Blue images or start from a Fedora Atomic system. Below this paragraph is a dropdown with a non-exhaustive list of potential base images.
+## NetBird
 
-<details>
-    <summary>Base Images</summary>
+uCore already includes Tailscale.
 
-- Bazzite: `ghcr.io/ublue-os/bazzite:stable`
-- Aurora: `ghcr.io/ublue-os/aurora:stable`
-- Bluefin: `ghcr.io/ublue-os/bluefin:stable`
-- Universal Blue Base: `ghcr.io/ublue-os/base-main:latest`
-- Fedora: `quay.io/fedora/fedora-bootc:44`
+This image additionally provides the native [NetBird](https://github.com/netbirdio/netbird) client for users who prefer NetBird to operate their own NetBird infrastructure.
 
-You can find more Universal Blue images on the [packages page](https://github.com/orgs/ublue-os/packages).
-</details>
+The image does not contain a NetBird account, setup key or management-server configuration.
 
-If you don't know which image to pick, choosing the one your system is currently on is the best bet for a smooth transition. To find out what image your system currently uses, run the following command:
-```bash
-sudo bootc status
+NetBird is installed but deliberately left disabled/unconfigured.
+
+## What belongs in this image?
+
+Small host-side administration, diagnostic or hardware-management utilities.
+
+Examples:
+
+```text
+small CLI diagnostics
+network administration tools
+hardware monitoring tools
+small storage/admin helpers
+similar lightweight utilities
 ```
-This will show you all the info you need to know about your current image. The image you are currently on is displayed after `Booted image:`. Paste that information after the `FROM` statement in the Containerfile to set it as your base image.
 
-### Step 2c: Changing Names
+The goal is to keep the custom layer small.
 
-Change the `IMAGE_NAME` and `REPO_ORGANIZATION` variable inside the `image-template.env`
+## What does NOT belong here?
 
-To commit and push all the files changed and added in step 2 into your Github repository:
-```bash
-git add Containerfile image-template.env cosign.pub
-git commit -m "Initial Setup"
-git push
+Large applications and services that work well as containers will not be baked into the operating-system image.
+
+Examples:
+
+```text
+Jellyfin
+Plex
+Asterisk
+databases
+media automation stacks
+download stacks
+application servers
+large monitoring platforms
 ```
-Once pushed, go look at the Actions tab on your Github repository's page.  The green checkmark should be showing on the top commit, which means your new image is ready!
 
-## Step 3: Switch to Your Image
+Those applications belong in Podman/Docker containers.
 
-From your bootc system, run the following command substituting in your Github username and image name where noted.
-```bash
-sudo bootc switch ghcr.io/<username>/<image_name>
-```
-This should queue your image for the next reboot, which you can do immediately after the command finishes. You have officially set up your custom image! See the following section for an explanation of the important parts of the template for customization.
+This project is not intended to become an all-in-one home-server distribution.
 
-# Repository Contents
+## NVIDIA images
 
-## Containerfile
+NVIDIA variants are not currently built because they are not needed for the systems this project is being developed and tested on.
 
-The [Containerfile](./Containerfile) defines the operations used to customize the selected image.This file is the entrypoint for your image build, and works exactly like a regular podman Containerfile. For reference, please see the [Podman Documentation](https://docs.podman.io/en/latest/Introduction.html).
+If you need the same small toolset on an upstream uCore NVIDIA image, open a feature request. A corresponding build-matrix variant can be added later.
 
-## build.sh
+## Installation
 
-The [build.sh](./build_files/build.sh) file is called from your Containerfile. It is the best place to install new packages or make any other customization to your system. There are customization examples contained within it for your perusal.
-
-## build.yml
-
-The [build.yml](./.github/workflows/build.yml) Github Actions workflow creates your custom OCI image and publishes it to the Github Container Registry (GHCR). By default, the image name will match the Github repository name.
-
-# Building Disk Images
-
-This template provides an out of the box workflow for creating disk images (ISO, qcow, raw) for your custom OCI image which can be used to directly install onto your machines.
-
-This template provides a way to upload the disk images that is generated from the workflow to a S3 bucket. The disk images will also be available as an artifact from the job, if you wish to use an alternate provider. To upload to S3 we use [rclone](https://rclone.org/) which is able to use [many S3 providers](https://rclone.org/s3/).
-
-## Setting Up ISO Builds
-
-The [build-disk.yml](./.github/workflows/build-disk.yml) Github Actions workflow creates a disk image from your OCI image by utilizing the [bootc-image-builder](https://osbuild.org/docs/bootc/). In order to use this workflow you must complete the following steps:
-
-1. Modify `disk_config/iso.toml` to point to your custom container image before generating an ISO image.
-2. If you changed your image name from the default in `build.yml` then in the `build-disk.yml` file edit the `IMAGE_REGISTRY`, `IMAGE_NAME` and `DEFAULT_TAG` environment variables with the correct values. If you did not make changes, skip this step.
-3. Finally, if you want to upload your disk images to S3 then you will need to add your S3 configuration to the repository's Action secrets. This can be found by going to your repository settings, under `Secrets and Variables` -> `Actions`. You will need to add the following
-  - `S3_PROVIDER` - Must match one of the values from the [supported list](https://rclone.org/s3/)
-  - `S3_BUCKET_NAME` - Your unique bucket name
-  - `S3_ACCESS_KEY_ID` - It is recommended that you make a separate key just for this workflow
-  - `S3_SECRET_ACCESS_KEY` - See above.
-  - `S3_REGION` - The region your bucket lives in. If you do not know then set this value to `auto`.
-  - `S3_ENDPOINT` - This value will be specific to the bucket as well.
-
-Once the workflow is done, you'll find the disk images either in your S3 bucket or as part of the summary under `Artifacts` after the workflow is completed.
-
-# Artifacthub
-
-This template comes with the necessary tooling to index your image on [artifacthub.io](https://artifacthub.io). Use the `artifacthub-repo.yml` file at the root to verify yourself as the publisher. This is important to you for a few reasons:
-
-- The value of artifacthub is it's one place for people to index their custom images, and since we depend on each other to learn, it helps grow the community. 
-- You get to see your pet project listed with the other cool projects in Cloud Native.
-- Since the site puts your README front and center, it's a good way to learn how to write a good README, learn some marketing, finding your audience, etc. 
-
-[Discussion Thread](https://universal-blue.discourse.group/t/listing-your-custom-image-on-artifacthub/6446)
-
-# Justfile Documentation
-
-The `Justfile` contains various commands and configurations for building and managing container images and virtual machine images using Podman and other utilities. It is also used inside Github Actions.
-
-## Required Utilities
-
-Container build:
-- [just](https://just.systems/man/en/introduction.html)
-- [podman](https://docs.podman.io/en/latest)
-- [jq](https://jqlang.org)
-
-These are usually preinstalled on Universal Blue's Bootc Images.
-
-Linting:
-- shfmt
-- shellcheck
-
-## Environment Variables
-
-These are all sourced from the `image-template.env` file.
-
-- `image_name`: The name of the image (default: "image-template").
-- `default_tag`: The default tag for the image (default: "latest").
-- `bib_image`: The Bootc Image Builder (BIB) image (default: "quay.io/centos-bootc/bootc-image-builder:latest").
-
-## Building The Image
-
-All these recipes will work (with default values) without supplying any arguments to them, e.g. `just build`
-
-### `just build`
-
-Builds a container image using Podman.
+For an existing compatible bootc/uCore installation:
 
 ```bash
-just build $target_image $tag
+sudo bootc switch \
+    ghcr.io/iegorch86/home-server-ucore:lts
 ```
 
-Arguments:
-- `$target_image`: The tag you want to apply to the image (default: `$image_name`).
-- `$tag`: The tag for the image (default: `$default_tag`).
+Then reboot.
 
-### Rechunking
-We can flatten the layers of container images to make sure there isn't a single huge layer when your image gets published.
-This does not make your image faster to download, just provides better resumability.
+See `docs/HOME-SERVER-UCORE-BUILD-GUIDE.md` for build, verification and migration details.
 
-#### `just ostree-rechunk`
-Rechunks the existing Image with [rpm-ostree](https://coreos.github.io/rpm-ostree/build-chunked-oci/)
+## Updates
 
-```bash
-just ostree-rechunk $target_image $tag
+Scheduled GitHub Actions runs inspect the exact upstream digest.
+
+If upstream did not change, no scheduled rebuild is made.
+
+If upstream changed:
+
+```text
+build
+rechunk
+publish
+sign
+verify
 ```
 
-#### `just rechunk`
-Rechunks the existing Image with [chunkah](https://github.com/coreos/chunkah), this is probably gonna be the default here at some point, try it out, it's cool.
+Normal repository changes and manual runs still build.
 
-```bash
-just rechunk $target_image $tag
+## Image signing
+
+Published images are signed with Cosign.
+
+The workflow signs the exact digest read back from GHCR after upload and verifies the resulting signature.
+
+## Issue policy
+
+Open an issue here when the problem is caused by something this repository adds.
+
+Examples:
+
+- NUT failed to install in this custom image
+- UPSide is missing or packaged incorrectly
+- NetBird integration is broken
+- one of the added utilities is missing
+- the custom GitHub Actions workflow failed
+- image signing/verification maintained by this repository is broken
+- a small home-server administration utility would be useful
+
+If the same problem happens on plain upstream uCore, it does not belong to this repository.
+
+Examples:
+
+- kernel regressions
+- memory leaks
+- hardware drivers
+- Fedora CoreOS problems
+- bootc problems
+- rpm-ostree problems
+- ZFS
+- Podman
+- Cockpit itself
+- libvirt/KVM
+- uCore base services
+
+Report those to the project that actually maintains the component.
+
+### Upstream issue trackers
+
+- [Universal Blue uCore](https://github.com/ublue-os/ucore/issues)
+- [Fedora CoreOS](https://github.com/coreos/fedora-coreos-tracker/issues)
+- [bootc](https://github.com/bootc-dev/bootc/issues)
+- [Cockpit](https://github.com/cockpit-project/cockpit/issues)
+- [Network UPS Tools](https://github.com/networkupstools/nut/issues)
+- [UPSide](https://github.com/deviationist/cockpit-upside/issues)
+- [NetBird](https://github.com/netbirdio/netbird/issues)
+
+## Feature requests
+
+Small feature requests are welcome.
+
+If it is a small host-administration utility that makes sense directly on a server OS, it can be considered.
+
+If it is an application/service that naturally belongs in a container, it will normally stay out of this image.
+
+## Architectures
+
+Currently supported:
+
+```text
+x86_64 / amd64
 ```
 
-### Switching to the locally built image for testing
+ARM64 is intentionally not published because it is not currently tested here.
 
-The image has to be in the containers-storage owned by root, to be able to rebase to it, see the `_rootful_load_image` recipe.
+## Upstream
 
-`sudo just build` and `sudo just ostree-rechunk` builds directly as root and allows you to skip the transfer to the root containers-storage.
+This project depends on:
 
-You can rebase to all the images that are in your containers-storage:
+- [Fedora CoreOS](https://fedoraproject.org/coreos/)
+- [Universal Blue uCore](https://github.com/ublue-os/ucore)
+- [Universal Blue image-template](https://github.com/ublue-os/image-template)
+- [Network UPS Tools](https://github.com/networkupstools/nut)
+- [UPSide](https://github.com/deviationist/cockpit-upside)
+- [NetBird](https://github.com/netbirdio/netbird)
 
-```
-sudo podman image list --filter=label=containers.bootc=1
-```
+The operating-system engineering belongs upstream.
 
-See [man bootc switch](https://bootc.dev/bootc/man/bootc-switch.8.html) for more info.
-
-```
-sudo bootc switch --transport containers-storage localhost/myimage:latest
-```
-
-and reboot your system!
-
-## Building and Running Virtual Machines and ISOs
-
-The below commands all build QCOW2 images. To produce or use a different type of image, substitute in the command with that type in the place of `qcow2`. The available types are `qcow2`, `iso`, and `raw`.
-
-### `just build-qcow2`
-
-Builds a QCOW2 virtual machine image.
-
-```bash
-just build-qcow2 $target_image $tag
-```
-
-### `just rebuild-qcow2`
-
-Rebuilds a QCOW2 virtual machine image.
-
-```bash
-just rebuild-vm $target_image $tag
-```
-
-### `just run-vm-qcow2`
-
-Runs a virtual machine from a QCOW2 image.
-
-```bash
-just run-vm-qcow2 $target_image $tag
-```
-
-### `just spawn-vm`
-
-Runs a virtual machine using systemd-vmspawn.
-
-```bash
-just spawn-vm rebuild="0" type="qcow2" ram="6G"
-```
-
-## File Management
-
-### `just check`
-
-Checks the syntax of all `.just` files and the `Justfile`.
-
-### `just fix`
-
-Fixes the syntax of all `.just` files and the `Justfile`.
-
-### `just clean`
-
-Cleans the repository by removing build artifacts.
-
-### `just lint`
-
-Runs shell check on all Bash scripts.
-
-### `just format`
-
-Runs shfmt on all Bash scripts.
-
-## Additional resources
-
-For additional driver support, ublue maintains a set of scripts and container images available at [ublue-akmod](https://github.com/ublue-os/akmods). These images include the necessary scripts to install multiple kernel drivers within the container (Nvidia, OpenRazer, Framework...). The documentation provides guidance on how to properly integrate these drivers into your container image.
-
-## Community Examples
-
-These are images derived from this template (or similar enough to this template). Reference them when building your image!
-
-- [m2Giles' OS](https://github.com/m2giles/m2os)
-- [bOS](https://github.com/bsherman/bos)
-- [Homer](https://github.com/bketelsen/homer/)
-- [Amy OS](https://github.com/astrovm/amyos)
-- [VeneOS](https://github.com/Venefilyn/veneos)
+This repository intentionally remains only a thin home-server convenience layer.

@@ -1,0 +1,4 @@
+Bash syntax OK: build_files/build.sh
+Bash syntax OK: build_files/install-image-trust.sh
+YAML syntax OK: .github/workflows/build.yml
+YAML syntax OK: system_files/etc/containers/registries.d/iegorch86.yaml

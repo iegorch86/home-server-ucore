@@ -1,0 +1,6 @@
+docker:
+  ghcr.io/iegorch86/home-server-ucore:
+    use-sigstore-attachments: true
+
+  ghcr.io/iegorch86/home-server-ucore-hci:
+    use-sigstore-attachments: true
