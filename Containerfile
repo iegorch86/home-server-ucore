@@ -16,7 +16,6 @@ FROM registry.fedoraproject.org/fedora:44 AS upside-builder
 ARG UPSIDE_COMMIT
 
 RUN dnf install -y \
-        gettext \
         git \
         make \
         nodejs \
@@ -26,19 +25,18 @@ RUN dnf install -y \
     && cd /src/upside \
     && git checkout "${UPSIDE_COMMIT}" \
     && make \
-    && make install DESTDIR=/out PREFIX=/usr \
+    && mkdir -p /out/usr/share/cockpit/upside \
+    && cp -a dist/. /out/usr/share/cockpit/upside/ \
     && test -f /out/usr/share/cockpit/upside/manifest.json \
     && dnf clean all
 
+
+# Final uCore image.
 FROM ${UCORE_IMAGE}
 
 COPY --from=upside-builder \
     /out/usr/share/cockpit/upside/ \
     /usr/share/cockpit/upside/
-
-COPY --from=upside-builder \
-    /out/usr/share/metainfo/ \
-    /usr/share/metainfo/
 
 RUN --mount=type=bind,from=ctx,source=/,target=/ctx \
     --mount=type=cache,dst=/var/cache \
