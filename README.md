@@ -34,7 +34,7 @@ Everything else remains as close as possible to upstream uCore.
 
 ## Images
 
-Initial image:
+uCore image:
 
 ```text
 ghcr.io/iegorch86/home-server-ucore:lts
@@ -46,7 +46,7 @@ Based on:
 ghcr.io/ublue-os/ucore:lts
 ```
 
-Planned HCI image:
+Planned uCore HCI image:
 
 ```text
 ghcr.io/iegorch86/home-server-ucore-hci:lts
@@ -71,9 +71,9 @@ Those builds are disabled until intentionally enabled.
 
 This project does not maintain or select its own kernel.
 
-The LTS images inherit the kernel published by the corresponding upstream uCore LTS stream.
+LTS images includes kernel published by the upstream uCore LTS.
 
-Kernel regressions and other upstream kernel issues belong upstream.
+Kernel regressions and kernel issues belong upstream.
 
 ## UPS support
 
@@ -108,8 +108,6 @@ Those settings belong to the individual server. A system with no UPS should work
 [UPSide](https://github.com/deviationist/cockpit-upside) is installed as a system-wide Cockpit extension and uses NUT as its backend.
 
 UPSide is compiled in a separate build stage so Node.js, npm and its other build dependencies do not remain in the final operating-system image.
-
-The project pins a known UPSide release instead of automatically building whatever happens to be on `main`.
 
 ## PowerTOP
 
@@ -178,7 +176,7 @@ This project is not intended to become an all-in-one home-server distribution.
 
 NVIDIA variants are not currently built because they are not needed for the systems this project is being developed and tested on.
 
-If you need the same small toolset on an upstream uCore NVIDIA image, open a feature request. A corresponding build-matrix variant can be added later.
+If you need the same small toolset on an upstream uCore NVIDIA image, open a feature request, or create fork, corresponding build-matrix variant can be added later.
 
 ## Installation
 
@@ -190,8 +188,6 @@ sudo bootc switch \
 ```
 
 Then reboot.
-
-See `docs/HOME-SERVER-UCORE-BUILD-GUIDE.md` for build, verification and migration details.
 
 ## Updates
 

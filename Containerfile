@@ -1,6 +1,7 @@
-# Exact upstream digest is supplied by GitHub Actions.
-# This moving tag is only the local-build fallback.
+# GitHub Actions supplies the selected upstream image through the build matrix.
+# These values are the normal local-build defaults.
 ARG UCORE_IMAGE=ghcr.io/ublue-os/ucore:lts
+ARG IMAGE_REPOSITORY=ghcr.io/iegorch86/home-server-ucore-lts
 
 # UPSide stays reproducibly pinned to an exact release commit.
 # Renovate tracks the release tag + matching commit and raises a PR for updates.
@@ -36,8 +37,10 @@ RUN dnf install -y \
     && dnf clean all
 
 
-# Final uCore image.
+# Final uCore/uCore HCI image.
 FROM ${UCORE_IMAGE}
+
+ARG IMAGE_REPOSITORY
 
 COPY --from=upside-builder \
     /out/usr/share/cockpit/upside/ \
@@ -47,6 +50,7 @@ RUN --mount=type=bind,from=ctx,source=/,target=/ctx \
     --mount=type=cache,dst=/var/cache \
     --mount=type=cache,dst=/var/log \
     --mount=type=tmpfs,dst=/tmp \
+    IMAGE_REPOSITORY="${IMAGE_REPOSITORY}" \
     /ctx/build.sh
 
 RUN bootc container lint

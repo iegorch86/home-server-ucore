@@ -2,15 +2,17 @@
 
 set -ouex pipefail
 
+# The build must tell this image which GHCR repository it belongs to.
+: "${IMAGE_REPOSITORY:?IMAGE_REPOSITORY must be set by the image build}"
+
 # Copy declarative system files into the image.
 cp -avf /ctx/system_files/. /
 
 # jq is needed by install-image-trust.sh.
 dnf5 install -y jq
 
-# Trust both planned custom-image repositories.
-/ctx/install-image-trust.sh \
-    "ghcr.io/iegorch86/home-server-ucore"
+# Trust the exact custom-image repository currently being built.
+/ctx/install-image-trust.sh "${IMAGE_REPOSITORY}"
 
 # Small host-side administration/tooling layer.
 dnf5 install -y \
@@ -47,4 +49,5 @@ test -f /usr/share/cockpit/upside/manifest.json
 # - configure/connect NetBird
 # - install/start the NetBird service
 # - run powertop --auto-tune
+
 dnf5 clean all
