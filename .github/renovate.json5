@@ -6,10 +6,26 @@
 
   "rebaseWhen": "never",
 
+  "customManagers": [
+    {
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/^Containerfile$/",
+      ],
+      "matchStrings": [
+        "ARG UPSIDE_VERSION=(?<currentValue>\\S+)\\s+ARG UPSIDE_COMMIT=(?<currentDigest>[a-f0-9]{40})",
+      ],
+      "packageNameTemplate": "deviationist/cockpit-upside",
+      "datasourceTemplate": "github-tags",
+      "versioningTemplate": "semver",
+      "autoReplaceStringTemplate": "ARG UPSIDE_VERSION={{{newValue}}}\nARG UPSIDE_COMMIT={{{newDigest}}}",
+    },
+  ],
+
   "packageRules": [
     {
       "automerge": true,
-      "matchUpdateTypes": ["pin", "pinDigest"]
+      "matchUpdateTypes": ["pin", "pinDigest"],
     },
     {
       "enabled": false,
@@ -17,5 +33,9 @@
       "matchDepTypes": ["container"],
       "matchFileNames": [".github/workflows/**.yaml", ".github/workflows/**.yml"],
     },
-  ]
+    {
+      "automerge": false,
+      "matchPackageNames": ["deviationist/cockpit-upside"],
+    },
+  ],
 }

@@ -10,8 +10,7 @@ dnf5 install -y jq
 
 # Trust both planned custom-image repositories.
 /ctx/install-image-trust.sh \
-    "ghcr.io/iegorch86/home-server-ucore" \
-    "ghcr.io/iegorch86/home-server-ucore-hci"
+    "ghcr.io/iegorch86/home-server-ucore"
 
 # Small host-side administration/tooling layer.
 dnf5 install -y \
@@ -22,7 +21,12 @@ dnf5 install -y \
     fastfetch
 
 # NetBird client from its official RPM repository.
-dnf5 install -y netbird
+#
+# NetBird's RPM %post tries to install and start its systemd service.
+# That is appropriate on a running host but not while composing a bootc image.
+# Install the RPM payload without package scriptlets; runtime configuration
+# and service activation remain an explicit host-side action.
+dnf5 --setopt=tsflags=noscripts install -y netbird
 
 # The generic image must not connect or auto-enable NetBird.
 systemctl disable netbird.service 2>/dev/null || true
@@ -32,7 +36,6 @@ command -v upsc
 command -v nut-scanner
 command -v powertop
 command -v btop
-command -v htop
 command -v fastfetch
 command -v netbird
 
@@ -42,6 +45,6 @@ test -f /usr/share/cockpit/upside/manifest.json
 # - enable/configure NUT
 # - add UPS credentials/hardware-specific settings
 # - configure/connect NetBird
+# - install/start the NetBird service
 # - run powertop --auto-tune
-
 dnf5 clean all
