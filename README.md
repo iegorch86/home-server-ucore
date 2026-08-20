@@ -46,7 +46,7 @@ Based on:
 ghcr.io/ublue-os/ucore:lts
 ```
 
-Planned uCore HCI image:
+uCore HCI image:
 
 ```text
 ghcr.io/iegorch86/home-server-ucore-hci:lts
