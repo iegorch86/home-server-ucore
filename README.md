@@ -110,6 +110,8 @@ Those settings belong to the individual server. A system with no UPS should work
 
 UPSide is compiled in a separate build stage so Node.js, npm and its other build dependencies do not remain in the final operating-system image.
 
+[UPSide Config and troubleshooting] (/docs/nut-upside-coreos-troubleshooting.md)
+
 ## PowerTOP
 
 PowerTOP is included for diagnostics.

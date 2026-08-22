@@ -1,0 +1,36 @@
+#!/bin/bash
+# OpenMetrics scraper exposing NUT UPS variables to the PCP openmetrics PMDA.
+# Surfaces as openmetrics.nut.<metric>, one instance per UPS.
+#
+# Local workaround for UPSide 1.0.6 history setup:
+# keep the explicit "exit 0" at the end. Without it, if the final requested
+# NUT variable is absent (for example output.frequency), the script can exit 1
+# even after emitting valid metrics, causing pmdaopenmetrics to reject the source.
+set -uo pipefail
+PATH=/usr/bin:/bin
+
+pairs="battery.charge:battery_charge battery.runtime:battery_runtime \
+battery.voltage:battery_voltage battery.temperature:battery_temperature \
+ups.load:ups_load ups.realpower:ups_realpower \
+input.voltage:input_voltage input.frequency:input_frequency \
+output.voltage:output_voltage output.frequency:output_frequency"
+
+mapfile -t upslist < <(upsc -l 2>/dev/null)
+declare -A data
+for u in "${upslist[@]}"; do
+    data["$u"]=$(upsc "$u" 2>/dev/null)
+done
+
+for pair in $pairs; do
+    nv=${pair%%:*}
+    m=${pair#*:}
+    printf '# HELP %s NUT %s\n' "$m" "$nv"
+    printf '# TYPE %s gauge\n' "$m"
+    for u in "${upslist[@]}"; do
+        val=$(printf '%s\n' "${data[$u]}" | awk -F': ' -v k="$nv" '$1==k{print $2; exit}')
+        [[ $val =~ ^-?[0-9]+(\.[0-9]+)?$ ]] && printf '%s{ups="%s"} %s\n' "$m" "$u" "$val"
+    done
+done
+
+# Important: do not let a missing final NUT variable make the collector fail.
+exit 0
