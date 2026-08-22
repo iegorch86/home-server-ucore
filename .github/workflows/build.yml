@@ -1,12 +1,12 @@
 ---
-name: Build container images
+name: Build signed Home Server uCore images
 
 on:
   pull_request:
     branches:
       - main
   schedule:
-    - cron: '05 22 * * *'  # 10:05pm UTC everyday
+    - cron: '45 3 * * *'  # 3:45am UTC everyday (approx 60 minutes after ucore images run)
   push:
     branches:
       - main
@@ -30,10 +30,10 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - image_name: home-server-ucore-lts
+          - image_name: home-server-ucore
             ucore_image: ghcr.io/ublue-os/ucore:lts
 
-          - image_name: home-server-ucore-hci-lts
+          - image_name: home-server-ucore-hci
             ucore_image: ghcr.io/ublue-os/ucore-hci:lts
 
     permissions:
@@ -168,3 +168,202 @@ jobs:
             --use-signing-config=false \
             --key env://COSIGN_PRIVATE_KEY \
             "${IMAGE_REGISTRY}/${IMAGE_NAME}@${DIGEST}"
+  release:
+    name: Publish GitHub release
+    needs: build_push
+    if: github.event_name != 'pull_request' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+    runs-on: ubuntu-24.04
+
+    permissions:
+      contents: write
+      packages: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Install release tools
+        shell: bash
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y jq skopeo
+
+      - name: Login to GitHub Container Registry
+        shell: bash
+        env:
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          printf '%s' "${GHCR_TOKEN}" | skopeo login ghcr.io \
+            --username "${GITHUB_ACTOR}" \
+            --password-stdin
+
+      - name: Publish GitHub release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+
+          source image-template.env
+
+          registry="ghcr.io/${GITHUB_REPOSITORY_OWNER,,}"
+          short_sha="$(git rev-parse --short HEAD)"
+
+          # The Justfile already publishes tags in this format:
+          # lts-YYYYMMDD-<git-sha>
+          #
+          # Find the exact tag produced by this workflow rather than
+          # independently guessing the build date.
+          release_pattern="^${DEFAULT_TAG}-[0-9]{8}-${short_sha}$"
+
+          find_release_tag() {
+            local repository="$1"
+
+            skopeo list-tags "docker://${registry}/${repository}" \
+              | jq -r --arg pattern "${release_pattern}" \
+                  '.Tags[]? | select(test($pattern))' \
+              | sort \
+              | tail -n 1
+          }
+
+          ucore_tag="$(find_release_tag "home-server-ucore")"
+          hci_tag="$(find_release_tag "home-server-ucore-hci")"
+
+          if [[ -z "${ucore_tag}" ]]; then
+            echo "Could not find release tag for home-server-ucore."
+            exit 1
+          fi
+
+          if [[ -z "${hci_tag}" ]]; then
+            echo "Could not find release tag for home-server-ucore-hci."
+            exit 1
+          fi
+
+          if [[ "${ucore_tag}" != "${hci_tag}" ]]; then
+            echo "Image release tags do not match:"
+            echo "  uCore:     ${ucore_tag}"
+            echo "  uCore HCI: ${hci_tag}"
+            exit 1
+          fi
+
+          release_tag="${ucore_tag}"
+
+          build_date="${release_tag#${DEFAULT_TAG}-}"
+          build_date="${build_date%-${short_sha}}"
+
+          release_date="${build_date:0:4}-${build_date:4:2}-${build_date:6:2}"
+
+          ucore_current="${registry}/home-server-ucore:${DEFAULT_TAG}"
+          hci_current="${registry}/home-server-ucore-hci:${DEFAULT_TAG}"
+
+          ucore_release="${registry}/home-server-ucore:${release_tag}"
+          hci_release="${registry}/home-server-ucore-hci:${release_tag}"
+
+          ucore_digest="$(
+            skopeo inspect \
+              --format '{{.Digest}}' \
+              "docker://${ucore_release}"
+          )"
+
+          hci_digest="$(
+            skopeo inspect \
+              --format '{{.Digest}}' \
+              "docker://${hci_release}"
+          )"
+
+          if [[ ! "${ucore_digest}" =~ ^sha256:[0-9a-f]{64}$ ]]; then
+            echo "Invalid uCore digest: ${ucore_digest}"
+            exit 1
+          fi
+
+          if [[ ! "${hci_digest}" =~ ^sha256:[0-9a-f]{64}$ ]]; then
+            echo "Invalid uCore HCI digest: ${hci_digest}"
+            exit 1
+          fi
+
+          release_title="Home Server uCore LTS - ${release_date}"
+
+          cat > /tmp/release-notes.md <<EOF_NOTES
+          ## Home Server uCore LTS
+
+          Signed Home Server uCore images built from the current upstream uCore LTS images.
+
+          ### uCore
+
+          Current LTS image:
+
+          \`\`\`text
+          ${ucore_current}
+          \`\`\`
+
+          Release-specific image:
+
+          \`\`\`text
+          ${ucore_release}
+          \`\`\`
+
+          Published digest:
+
+          \`\`\`text
+          ${ucore_digest}
+          \`\`\`
+
+          ### uCore HCI
+
+          Current LTS image:
+
+          \`\`\`text
+          ${hci_current}
+          \`\`\`
+
+          Release-specific image:
+
+          \`\`\`text
+          ${hci_release}
+          \`\`\`
+
+          Published digest:
+
+          \`\`\`text
+          ${hci_digest}
+          \`\`\`
+
+          ### Switching to the images
+
+          Standard uCore:
+
+          \`\`\`bash
+          sudo bootc switch ${ucore_current}
+          \`\`\`
+
+          uCore HCI:
+
+          \`\`\`bash
+          sudo bootc switch ${hci_current}
+          \`\`\`
+
+          Both container images are signed with the repository Cosign signing key.
+          EOF_NOTES
+
+          if gh release view "${release_tag}" \
+              --repo "${GITHUB_REPOSITORY}" >/dev/null 2>&1; then
+
+            echo "Updating existing release ${release_tag}"
+
+            gh release edit "${release_tag}" \
+              --repo "${GITHUB_REPOSITORY}" \
+              --title "${release_title}" \
+              --notes-file /tmp/release-notes.md \
+              --latest
+          else
+            echo "Creating release ${release_tag}"
+
+            gh release create "${release_tag}" \
+              --repo "${GITHUB_REPOSITORY}" \
+              --target "${GITHUB_SHA}" \
+              --title "${release_title}" \
+              --notes-file /tmp/release-notes.md \
+              --latest
+          fi
