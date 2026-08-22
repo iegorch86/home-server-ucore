@@ -139,10 +139,6 @@ build $target_image=image_name $tag=default_tag:
             "--label"
             "org.opencontainers.image.url=https://github.com/{{ repo_organization }}/{{ repository_name }}/tree/${GIT_SHA}"
         )
-        LABELS+=(
-            "--label"
-            "org.opencontainers.image.version={{ default_tag }}.$(date +%Y%m%d)-${GIT_SHA}"
-        )
     fi
 
     # Image metadata for https://artifacthub.io/
@@ -238,6 +234,19 @@ ostree-rechunk $target_image=image_name $tag=default_tag:
     # Use the already-built local image to avoid pulling from a remote registry
     RPM_OSTREE_CHUNKER_IMAGE="localhost/${target_image}:${tag}"
 
+    # Preserve the upstream bootc version label when rebuilding from --rootfs.
+    IMAGE_VERSION="$(
+        podman inspect "${target_image}:${tag}" \
+            | jq -r '.[0].Config.Labels["org.opencontainers.image.version"] // empty'
+    )"
+
+    if [[ -z "${IMAGE_VERSION}" ]]; then
+        echo "org.opencontainers.image.version is missing before rechunking."
+        exit 1
+    fi
+
+    echo "Preserving image version: ${IMAGE_VERSION}"
+
     GRAPHROOT="$(podman info --format '{{ '{{.Store.GraphRoot}}' }}')"
 
     podman run --rm --pull=never --privileged \
@@ -250,6 +259,7 @@ ostree-rechunk $target_image=image_name $tag=default_tag:
       --max-layers 127 \
       --format-version=2 \
       --bootc \
+      --label "org.opencontainers.image.version=${IMAGE_VERSION}" \
       --rootfs /rpm-ostree \
       --output "containers-storage:[overlay@/run/host-container-storage+/run/rpm-ostree-storage]localhost/${target_image}:${tag}"
 
