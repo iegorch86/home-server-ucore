@@ -110,7 +110,7 @@ Those settings belong to the individual server. A system with no UPS should work
 
 UPSide is compiled in a separate build stage so Node.js, npm and its other build dependencies do not remain in the final operating-system image.
 
-[UPSide Config and troubleshooting] (/docs/nut-upside-coreos-troubleshooting.md)
+[UPSide Config and troubleshooting](/docs/nut-upside-coreos-troubleshooting.md)
 
 ## PowerTOP
 
@@ -228,7 +228,6 @@ Examples:
 - one of the added utilities is missing
 - the custom GitHub Actions workflow failed
 - image signing/verification maintained by this repository is broken
-- a small home-server administration utility would be useful
 
 If the same problem happens on plain upstream uCore, it does not belong to this repository.
 
