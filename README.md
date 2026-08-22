@@ -1,4 +1,5 @@
 # Home Server uCore
+[![Build signed Home Server uCore images](https://github.com/iegorch86/home-server-ucore/actions/workflows/build.yml/badge.svg)](https://github.com/iegorch86/home-server-ucore/actions/workflows/build.yml)
 
 A small downstream [Universal Blue uCore](https://github.com/ublue-os/ucore) image with a few practical tools for home-server administration.
 
