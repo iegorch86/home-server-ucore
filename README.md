@@ -297,6 +297,7 @@ This project depends on:
 - [Micro](https://github.com/micro-editor/MICRO)
 - [SuperFile](https://github.com/yorukot/superfile)
 - [VirtUI-Manager](https://github.com/aginies/virtui-manager)
+
 The operating-system engineering belongs upstream.
 
 This repository intentionally remains only a thin home-server convenience layer.
