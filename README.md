@@ -27,9 +27,21 @@ small host-admin tool layer
 | NUT | Native UPS monitoring and shutdown integration |
 | UPSide | Cockpit interface for NUT |
 | PowerTOP | Power diagnostics |
+| NetBird | Alternative to Tailscale  mesh-VPN client |
+| Micro | Friendly terminal text editor |
+| Superfile | Terminal file manager ('spf'- to start it) |
 | btop | System/resource monitoring |
 | fastfetch | Quick system information |
-| NetBird | Alternative to Tailscale  mesh-VPN client |
+
+The custom host-side software layer is declared in
+[`build_files/software.env`](build_files/software.env).
+
+That file is the first place to look if you want to see, add, remove, or
+change software included by this project.
+
+Normal Fedora packages are installed from the Fedora/uCore package sources.
+External projects such as UPSide and Superfile are pinned to both a release
+version and an exact upstream commit and are monitored for updates by Renovate.
 
 Everything else remains as close as possible to upstream uCore.
 
@@ -256,6 +268,8 @@ Report those to the project that actually maintains the component.
 - [Network UPS Tools](https://github.com/networkupstools/nut/issues)
 - [UPSide](https://github.com/deviationist/cockpit-upside/issues)
 - [NetBird](https://github.com/netbirdio/netbird/issues)
+- [Micro](https://github.com/micro-editor/micro/issues)
+- [SuperFile](https://github.com/yorukot/superfile/issues)
 
 ## Feature requests
 
@@ -285,7 +299,8 @@ This project depends on:
 - [Network UPS Tools](https://github.com/networkupstools/nut)
 - [UPSide](https://github.com/deviationist/cockpit-upside)
 - [NetBird](https://github.com/netbirdio/netbird)
-
+- [Micro](https://github.com/micro-editor/MICRO)
+- [SuperFile](https://github.com/yorukot/superfile)
 The operating-system engineering belongs upstream.
 
 This repository intentionally remains only a thin home-server convenience layer.

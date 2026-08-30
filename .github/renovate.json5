@@ -1,5 +1,6 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+
   "extends": [
     "config:best-practices",
   ],
@@ -9,33 +10,75 @@
   "customManagers": [
     {
       "customType": "regex",
+
       "managerFilePatterns": [
-        "/^Containerfile$/",
+        "/^build_files\\/software\\.env$/",
       ],
+
       "matchStrings": [
-        "ARG UPSIDE_VERSION=(?<currentValue>\\S+)\\s+ARG UPSIDE_COMMIT=(?<currentDigest>[a-f0-9]{40})",
+        "UPSIDE_VERSION=(?<currentValue>\\S+)\\s+UPSIDE_COMMIT=(?<currentDigest>[a-f0-9]{40})",
       ],
+
       "packageNameTemplate": "deviationist/cockpit-upside",
       "datasourceTemplate": "github-tags",
       "versioningTemplate": "semver",
-      "autoReplaceStringTemplate": "ARG UPSIDE_VERSION={{{newValue}}}\nARG UPSIDE_COMMIT={{{newDigest}}}",
+
+      "autoReplaceStringTemplate": "UPSIDE_VERSION={{{newValue}}}\\nUPSIDE_COMMIT={{{newDigest}}}",
+    },
+
+    {
+      "customType": "regex",
+
+      "managerFilePatterns": [
+        "/^build_files\\/software\\.env$/",
+      ],
+
+      "matchStrings": [
+        "SUPERFILE_VERSION=(?<currentValue>\\S+)\\s+SUPERFILE_COMMIT=(?<currentDigest>[a-f0-9]{40})",
+      ],
+
+      "packageNameTemplate": "yorukot/superfile",
+      "datasourceTemplate": "github-tags",
+      "versioningTemplate": "semver",
+
+      "extractVersionTemplate": "^v?(?<version>.*)$",
+
+      "autoReplaceStringTemplate": "SUPERFILE_VERSION={{{newValue}}}\\nSUPERFILE_COMMIT={{{newDigest}}}",
     },
   ],
 
   "packageRules": [
     {
       "automerge": true,
-      "matchUpdateTypes": ["pin", "pinDigest"],
+      "matchUpdateTypes": [
+        "pin",
+        "pinDigest",
+      ],
     },
+
     {
       "enabled": false,
-      "matchUpdateTypes": ["digest", "pinDigest", "pin"],
-      "matchDepTypes": ["container"],
-      "matchFileNames": [".github/workflows/**.yaml", ".github/workflows/**.yml"],
+      "matchUpdateTypes": [
+        "digest",
+        "pinDigest",
+        "pin",
+      ],
+      "matchDepTypes": [
+        "container",
+      ],
+      "matchFileNames": [
+        ".github/workflows/**.yaml",
+        ".github/workflows/**.yml",
+      ],
     },
+
     {
       "automerge": false,
-      "matchPackageNames": ["deviationist/cockpit-upside"],
+
+      "matchPackageNames": [
+        "deviationist/cockpit-upside",
+        "yorukot/superfile",
+      ],
     },
   ],
 }
