@@ -32,12 +32,15 @@ small host-admin tool layer
 | Superfile | Terminal file manager ('spf'- to start it) |
 | btop | System/resource monitoring |
 | fastfetch | Quick system information |
+| VirtUI Manager | Terminal libvirt/QEMU virtual machine manager — uCore HCI only |
 
 The custom host-side software layer is declared in
 [`build_files/software.env`](build_files/software.env).
 
 That file is the first place to look if you want to see, add, remove, or
 change software included by this project.
+Some software is image-specific. Entries marked **HCI only** are built only
+into `home-server-ucore-hci` and are not included in the regular uCore image.
 
 Normal Fedora packages are installed from the Fedora/uCore package sources.
 External projects such as UPSide and Superfile are pinned to both a release
@@ -70,15 +73,6 @@ Based on:
 ```text
 ghcr.io/ublue-os/ucore-hci:lts
 ```
-
-Prepared future variants:
-
-```text
-ghcr.io/iegorch86/home-server-ucore:stable
-ghcr.io/iegorch86/home-server-ucore-hci:stable
-```
-
-Those builds are disabled until intentionally enabled.
 
 ## Kernel scope
 
@@ -270,6 +264,7 @@ Report those to the project that actually maintains the component.
 - [NetBird](https://github.com/netbirdio/netbird/issues)
 - [Micro](https://github.com/micro-editor/micro/issues)
 - [SuperFile](https://github.com/yorukot/superfile/issues)
+- [VirtUI-Manager](https://github.com/aginies/virtui-manager/issues)
 
 ## Feature requests
 
@@ -301,6 +296,7 @@ This project depends on:
 - [NetBird](https://github.com/netbirdio/netbird)
 - [Micro](https://github.com/micro-editor/MICRO)
 - [SuperFile](https://github.com/yorukot/superfile)
+- [VirtUI-Manager](https://github.com/aginies/virtui-manager)
 The operating-system engineering belongs upstream.
 
 This repository intentionally remains only a thin home-server convenience layer.

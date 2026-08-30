@@ -4,6 +4,7 @@ set -ouex pipefail
 
 # The build must tell this image which GHCR repository it belongs to.
 : "${IMAGE_REPOSITORY:?IMAGE_REPOSITORY must be set by the image build}"
+: "${UCORE_IMAGE:?UCORE_IMAGE must be set by the image build}"
 
 # Load the human-readable custom software declaration.
 source /ctx/software.env
@@ -52,6 +53,19 @@ systemctl disable netbird.service 2>/dev/null || true
 
 
 # ============================================================
+# VirtUI Manager - uCore HCI only
+# ============================================================
+#
+# VirtUI Manager belongs only on the virtualization-focused
+# uCore HCI image. The regular uCore image intentionally does
+# not receive it.
+
+if [[ "${UCORE_IMAGE}" == *"/ucore-hci:"* ]]; then
+    dnf5 install -y /virtui-manager-rpm/virtui-manager-*.noarch.rpm
+fi
+
+
+# ============================================================
 # Build-time validation
 # ============================================================
 
@@ -63,6 +77,17 @@ command -v fastfetch
 command -v micro
 command -v netbird
 command -v spf
+
+
+if [[ "${UCORE_IMAGE}" == *"/ucore-hci:"* ]]; then
+    command -v virtui-manager
+    command -v vmc
+    rpm -q virtui-manager
+
+    PYTHONPATH=/usr/libexec/virtui-manager/python \
+        python3 -c 'import textual, libvirt, yaml, requests, netifaces, gi, packaging, markdown_it, vmanager.wrapper'
+fi
+
 
 test -f /usr/share/cockpit/upside/manifest.json
 test -f /usr/share/licenses/superfile/LICENSE

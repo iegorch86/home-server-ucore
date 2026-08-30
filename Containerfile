@@ -66,11 +66,93 @@ RUN dnf install -y \
 
 
 # ============================================================
+# VirtUI Manager RPM builder
+# ============================================================
+#
+# VirtUI Manager is packaged as an RPM for the HCI image.
+#
+# Fedora 44 ships Textual 4.x while VirtUI Manager requires
+# Textual >= 8. A compatible Textual release is bundled privately
+# under /usr/libexec/virtui-manager instead of replacing Fedora's
+# system Python packages.
+#
+# The completed RPM is installed only into uCore HCI.
+
+FROM registry.fedoraproject.org/fedora:44 AS virtui-manager-builder
+
+COPY build_files/software.env /tmp/software.env
+COPY build_files/virtui-manager.spec /tmp/virtui-manager.spec
+
+RUN dnf install -y \
+        git \
+        python3 \
+        python3-pip \
+        python3-setuptools \
+        python3-wheel \
+        rpm-build \
+        tar \
+        gzip \
+    && . /tmp/software.env \
+    && git clone https://github.com/aginies/virtui-manager.git /src/virtui-manager \
+    && cd /src/virtui-manager \
+    && test "$(git rev-parse "refs/tags/v${VIRTUI_MANAGER_VERSION}^{commit}")" = "${VIRTUI_MANAGER_COMMIT}" \
+    && git checkout --detach "${VIRTUI_MANAGER_COMMIT}" \
+    \
+    && mkdir -p /tmp/payload/usr/libexec/virtui-manager/python \
+    && mkdir -p /tmp/payload/usr/share/licenses/virtui-manager \
+    \
+    && python3 -m pip install \
+        --no-deps \
+        --no-build-isolation \
+        --no-compile \
+        --target /tmp/payload/usr/libexec/virtui-manager/python \
+        . \
+    \
+    && python3 -m pip install \
+        --no-compile \
+        --target /tmp/payload/usr/libexec/virtui-manager/python \
+        "textual==${VIRTUI_TEXTUAL_VERSION}" \
+    \
+    && install -Dm0644 \
+        LICENSE \
+        /tmp/payload/usr/share/licenses/virtui-manager/LICENSE \
+    \
+    && mkdir -p \
+        /root/rpmbuild/BUILD \
+        /root/rpmbuild/BUILDROOT \
+        /root/rpmbuild/RPMS \
+        /root/rpmbuild/SOURCES \
+        /root/rpmbuild/SPECS \
+        /root/rpmbuild/SRPMS \
+    \
+    && tar \
+        -C /tmp/payload \
+        -czf /root/rpmbuild/SOURCES/virtui-manager-payload.tar.gz \
+        . \
+    \
+    && cp /tmp/virtui-manager.spec \
+        /root/rpmbuild/SPECS/virtui-manager.spec \
+    \
+    && rpmbuild \
+        -bb \
+        --define "virtui_version ${VIRTUI_MANAGER_VERSION}" \
+        /root/rpmbuild/SPECS/virtui-manager.spec \
+    \
+    && mkdir -p /out \
+    && cp \
+        /root/rpmbuild/RPMS/noarch/virtui-manager-*.noarch.rpm \
+        /out/ \
+    \
+    && dnf clean all
+
+
+# ============================================================
 # Final uCore / uCore HCI image
 # ============================================================
 
 FROM ${UCORE_IMAGE}
 
+ARG UCORE_IMAGE
 ARG IMAGE_REPOSITORY
 
 
@@ -91,9 +173,11 @@ COPY --from=superfile-builder \
 
 
 RUN --mount=type=bind,from=ctx,source=/,target=/ctx \
+    --mount=type=bind,from=virtui-manager-builder,source=/out,target=/virtui-manager-rpm \
     --mount=type=cache,dst=/var/cache \
     --mount=type=cache,dst=/var/log \
     --mount=type=tmpfs,dst=/tmp \
+    UCORE_IMAGE="${UCORE_IMAGE}" \
     IMAGE_REPOSITORY="${IMAGE_REPOSITORY}" \
     /ctx/build.sh
 
