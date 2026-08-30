@@ -216,6 +216,18 @@ systemctl is-enabled nut-driver-enumerator.service
 systemctl is-enabled nut-driver-enumerator.path
 ```
 
+### UPSide 1.0.6 boot-persistence bug
+
+UPSide 1.0.6 has a service-enable bug on this NUT/systemd layout. The setup wizard enables the individual NUT services, but it does not enable `nut.target`. The individual services can therefore show as `enabled` while still not starting after a reboot, and UPSide returns to the setup wizard because the driver and `upsd` are not running.
+
+Until this is fixed upstream, enable the NUT target manually:
+
+```bash
+sudo systemctl enable --now nut.target
+```
+
+This connects `nut.target` to the normal boot sequence and brings up the required NUT driver, server, and monitor services automatically. The fix was reboot-tested on this host: NUT came back normally and UPSide opened directly without showing the setup wizard again.
+
 ---
 
 ## 3. USB permissions problem on CoreOS/uCore
