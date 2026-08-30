@@ -82,7 +82,13 @@ command -v spf
 if [[ "${UCORE_IMAGE}" == *"/ucore-hci:"* ]]; then
     command -v virtui-manager
     command -v vmc
+    command -v websockify
+
     rpm -q virtui-manager
+    rpm -q novnc
+    rpm -q python3-websockify
+
+    test -d /usr/share/novnc
 
     PYTHONPATH=/usr/libexec/virtui-manager/python \
         python3 -c 'import textual, libvirt, yaml, requests, netifaces, gi, packaging, markdown_it, vmanager.wrapper'

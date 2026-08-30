@@ -28,6 +28,8 @@ Requires:       libosinfo
 Requires:       osinfo-db
 Requires:       tmux
 Requires:       7zip
+Requires:       novnc
+Requires:       python3-websockify
 
 
 %description
