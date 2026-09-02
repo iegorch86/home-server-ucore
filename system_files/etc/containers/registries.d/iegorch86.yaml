@@ -1,4 +1,12 @@
 docker:
+  # Current organization packages
+  ghcr.io/home-server-project/home-server-ucore:
+    use-sigstore-attachments: true
+
+  ghcr.io/home-server-project/home-server-ucore-hci:
+    use-sigstore-attachments: true
+
+  # Legacy personal packages retained during migration
   ghcr.io/iegorch86/home-server-ucore:
     use-sigstore-attachments: true
 
