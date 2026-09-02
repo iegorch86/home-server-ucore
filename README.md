@@ -197,7 +197,7 @@ sudo bootc switch ghcr.io/home-server-project/home-server-ucore:lts
 for HCI:
 
 ```bash
-sudo bootc switch ghcr.io/home-server-project/home-server-ucore-hci
+sudo bootc switch ghcr.io/home-server-project/home-server-ucore-hci:lts
 ```
 
 Then reboot.
