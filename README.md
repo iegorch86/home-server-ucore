@@ -195,6 +195,12 @@ For an existing compatible bootc/uCore installation:
 sudo bootc switch \
     ghcr.io/home-server-project/home-server-ucore/home-server-ucore:lts
 ```
+or for HCI:
+
+```bash
+sudo bootc switch \
+    ghcr.io/home-server-project/home-server-ucore/home-server-ucore-hci:lts
+```
 
 Then reboot.
 
