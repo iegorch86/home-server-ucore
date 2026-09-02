@@ -53,7 +53,7 @@ Everything else remains as close as possible to upstream uCore.
 uCore image:
 
 ```text
-ghcr.io/home-server-project/home-server-ucore/home-server-ucore:lts
+ghcr.io/home-server-project/home-server-ucore:lts
 ```
 
 Based on:
@@ -65,7 +65,7 @@ ghcr.io/ublue-os/ucore:lts
 uCore HCI image:
 
 ```text
-ghcr.io/home-server-project/home-server-ucore/home-server-ucore-hci:lts
+ghcr.io/home-server-project/home-server-ucore-hci:lts
 ```
 
 Based on:
@@ -192,14 +192,12 @@ If you need the same small toolset on an upstream uCore NVIDIA image, open a fea
 For an existing compatible bootc/uCore installation:
 
 ```bash
-sudo bootc switch \
-    ghcr.io/home-server-project/home-server-ucore/home-server-ucore:lts
+sudo bootc switch ghcr.io/home-server-project/home-server-ucore:lts
 ```
-or for HCI:
+for HCI:
 
 ```bash
-sudo bootc switch \
-    ghcr.io/home-server-project/home-server-ucore/home-server-ucore-hci:lts
+sudo bootc switch ghcr.io/home-server-project/home-server-ucore-hci
 ```
 
 Then reboot.
