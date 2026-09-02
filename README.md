@@ -1,5 +1,5 @@
 # Home Server uCore
-[![Build signed Home Server uCore images](https://github.com/iegorch86/home-server-ucore/actions/workflows/build.yml/badge.svg)](https://github.com/iegorch86/home-server-ucore/actions/workflows/build.yml)
+[![Build signed Home Server uCore images](https://github.com/home-server-project/home-server-ucore/actions/workflows/build.yml/badge.svg)](https://github.com/home-server-project/home-server-ucore/actions/workflows/build.yml)
 
 A small downstream [Universal Blue uCore](https://github.com/ublue-os/ucore) image with a few practical tools for home-server administration.
 
@@ -53,7 +53,7 @@ Everything else remains as close as possible to upstream uCore.
 uCore image:
 
 ```text
-ghcr.io/iegorch86/home-server-ucore:lts
+ghcr.io/home-server-project/home-server-ucore/home-server-ucore:lts
 ```
 
 Based on:
@@ -65,7 +65,7 @@ ghcr.io/ublue-os/ucore:lts
 uCore HCI image:
 
 ```text
-ghcr.io/iegorch86/home-server-ucore-hci:lts
+ghcr.io/home-server-project/home-server-ucore/home-server-ucore-hci:lts
 ```
 
 Based on:
@@ -193,7 +193,7 @@ For an existing compatible bootc/uCore installation:
 
 ```bash
 sudo bootc switch \
-    ghcr.io/iegorch86/home-server-ucore:lts
+    ghcr.io/home-server-project/home-server-ucore/home-server-ucore:lts
 ```
 
 Then reboot.

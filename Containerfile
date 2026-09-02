@@ -1,7 +1,7 @@
 # GitHub Actions supplies the selected upstream image through the build matrix.
 # These values are the normal local-build defaults.
 ARG UCORE_IMAGE=ghcr.io/ublue-os/ucore:lts
-ARG IMAGE_REPOSITORY=ghcr.io/iegorch86/home-server-ucore-lts
+ARG IMAGE_REPOSITORY=ghcr.io/home-server-project/home-server-ucore/home-server-ucore-lts
 
 
 FROM scratch AS ctx
