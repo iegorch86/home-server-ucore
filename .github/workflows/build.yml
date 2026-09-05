@@ -6,7 +6,7 @@ on:
     branches:
       - main
   schedule:
-    - cron: '45 3 * * *'  # 3:45am UTC everyday (approx 60 minutes after ucore images run)
+    - cron: '45 3 * * 6'  # Saturday at 3:45am UTC (approx 60 minutes after uCore images run)
   push:
     branches:
       - main
@@ -195,9 +195,24 @@ jobs:
         run: |
           set -euo pipefail
 
-          printf '%s' "${GHCR_TOKEN}" | skopeo login ghcr.io \
-            --username "${GITHUB_ACTOR}" \
-            --password-stdin
+          max_attempts=5
+
+          for ((attempt = 1; attempt <= max_attempts; attempt++)); do
+            if printf '%s' "${GHCR_TOKEN}" | skopeo login ghcr.io \
+              --username "${GITHUB_ACTOR}" \
+              --password-stdin; then
+              break
+            fi
+
+            if ((attempt == max_attempts)); then
+              echo "GHCR login failed after ${max_attempts} attempts."
+              exit 1
+            fi
+
+            delay=$((15 * 2 ** (attempt - 1)))
+            echo "GHCR login attempt ${attempt} failed; retrying in ${delay} seconds."
+            sleep "${delay}"
+          done
 
       - name: Publish GitHub release
         shell: bash
@@ -218,10 +233,32 @@ jobs:
           # independently guessing the build date.
           release_pattern="^${DEFAULT_TAG}-[0-9]{8}-${short_sha}$"
 
+          list_tags_with_retry() {
+            local repository="$1"
+            local max_attempts=5
+            local attempt
+            local delay
+
+            for ((attempt = 1; attempt <= max_attempts; attempt++)); do
+              if skopeo list-tags "docker://${registry}/${repository}"; then
+                return 0
+              fi
+
+              if ((attempt == max_attempts)); then
+                echo "Could not list tags for ${repository} after ${max_attempts} attempts." >&2
+                return 1
+              fi
+
+              delay=$((15 * 2 ** (attempt - 1)))
+              echo "Tag lookup for ${repository} failed; retrying in ${delay} seconds." >&2
+              sleep "${delay}"
+            done
+          }
+
           find_release_tag() {
             local repository="$1"
 
-            skopeo list-tags "docker://${registry}/${repository}" \
+            list_tags_with_retry "${repository}" \
               | jq -r --arg pattern "${release_pattern}" \
                   '.Tags[]? | select(test($pattern))' \
               | sort \
